@@ -314,7 +314,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         char filename[100];
         for(int i=0;i<nLength;i++)//for(int i=0;i<1;i++)//
         {
-                for(int j=0;j<nHeight;j++)//for(int j=0;j<1;j++)//
+        		for(int j=0;j<nHeight;j++)//for(int j=0;j<5;j++)//
                 {
                         for(int k=0;k<nWidth;k++)//for(int k=0;k<1;k++)//
                         {                        
@@ -336,7 +336,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
                                 {
                                         // USE SPHERES
                                         particle = createSphere(mphysicalSystem, particleRadius,
-                                                ChVector<>(2.4*particleRadius*i, 2.4*particleRadius*j, 2.4*particleRadius*k)+ChVector<>(-L/2+particleRadius, 2.4*particleRadius, -W/2+particleRadius)+ChVector<>(getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius)),
+                                                ChVector<>(2.4*particleRadius*i, 2.4*particleRadius*j, 2.4*particleRadius*k)+ChVector<>(-L/2+particleRadius, 2.4*particleRadius, -W/2+particleRadius),//+ChVector<>(getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius)),
                                                 //ChVector<>(0,1,0),//
                                                 color, mass, visualize, numRocks);
                                         //particle->GetCollisionModel()->SetFamily(5);
@@ -377,8 +377,8 @@ ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector
 	InitObject(shearPlate, mass, position, rotation, material, true, false, -1, -1);
 	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*.5,H*.5,TH*.5), ChVector<>(0,0,.5*W+.5*TH), rotation);
 	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*.5,H*.5,TH*.5), ChVector<>(0,0,-.5*W-.5*TH), rotation);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*.5,W*.5), ChVector<>(.5*L+.5*TH,0,0), rotation);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*.5,W*.5), ChVector<>(-.5*L-.5*TH,0,0), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*.5,(W+2*TH)*.5), ChVector<>(.5*L+.5*TH,0,0), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*.5,(W+2*TH)*.5), ChVector<>(-.5*L-.5*TH,0,0), rotation);
 	FinalizeObject(shearPlate, (ChSystemParallel *) mphysicalSystem);
 
         return shearPlate;
@@ -415,7 +415,7 @@ ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<
         ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
         mmaterial->SetFriction(mu); // Friction coefficient of steel
 
-        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>(L+2*TH, H, W+2*TH), ChVector<>(0,-H,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
+        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>(L+2*TH, TH, W+2*TH), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
         ground->SetMaterialSurface(mmaterial);
         ground->SetBodyFixed(true);
         //ground->GetCollisionModel()->SetFamily(4);
@@ -423,7 +423,7 @@ ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<
         bodyTypes.push_back("ground");
 
         // Create bottom
-        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*4,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false);
+        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*5,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false);
         bottom->SetMaterialSurface(mmaterial);
         bottom->SetBodyFixed(true);
         //bottom->GetCollisionModel()->SetFamily(4);
@@ -488,7 +488,7 @@ public:
                 mmaterial->SetFriction(mu); // Friction coefficient of steel
 
                 // Create ground
-                ground = createBox(mphysicalSystem, ChVector<>(L+2*TH,H,W+2*TH), ChVector<>(0,-H,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
+                ground = createBox(mphysicalSystem, ChVector<>(L+2*TH,TH,W+2*TH), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
                 ground->SetMaterialSurface(mmaterial);
                 ground->SetBodyFixed(true);
                 //ground->GetCollisionModel()->SetFamily(4);
@@ -553,7 +553,7 @@ int main(int argc, char* argv[])
 	int threads = 8;
 	int config = 0;
 	//real gravity = -9.81;			//acceleration due to gravity
-	real timestep = .0001;			//step size
+	real timestep = .001;			//step size
 	//real time_to_run = 1;			//length of simulation
 	real current_time = 0;
 
@@ -571,14 +571,14 @@ int main(int argc, char* argv[])
 	bool settleBodies = false;
         if(argc==2) settleBodies = atoi(argv[1]);
         bool useSpheres = true;
-        double scalingFactor = 100;
+        double scalingFactor = 1000;
         double L = .06*scalingFactor;
         double H = .03*scalingFactor;
         double W = .06*scalingFactor;
-        double TH = .0008*scalingFactor;
+        double TH = .0016*scalingFactor;
         //bool visualize = false;
         double desiredVelocity = .66e-3*scalingFactor;
-        double particleRadius = .004*scalingFactor;//.0004*scalingFactor;
+        double particleRadius = .0004*scalingFactor;//.0004*scalingFactor;
         bool importParticles = true;
         double lengthToRun = .006*scalingFactor;
         double time_to_run = 5;//lengthToRun/desiredVelocity;
@@ -627,7 +627,7 @@ int main(int argc, char* argv[])
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetTolerance(0);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(10);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->SetCollisionEnvelope(particleRadius * .05);
