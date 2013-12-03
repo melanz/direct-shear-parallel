@@ -315,7 +315,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         char filename[100];
         for(int i=0;i<nLength;i++)//for(int i=0;i<1;i++)//
         {
-        		for(int j=0;j<nHeight;j++)//for(int j=0;j<2;j++)//
+        		for(int j=0;j<100;j++)//for(int j=0;j<nHeight;j++)//
                 {
                         for(int k=0;k<nWidth;k++)//for(int k=0;k<1;k++)//
                         {                        
@@ -629,7 +629,7 @@ int main(int argc, char* argv[])
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(3);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->SetCollisionEnvelope(particleRadius * .05);
