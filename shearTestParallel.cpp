@@ -15,8 +15,6 @@ struct bodyLocation {
 
 int importBodyLocations(char* fileName, vector<bodyLocation>* bodyLocations)
 {
-        int numBodies = 0;
-        int numRocks = 0;
         double pos_x=0;
         double pos_y=0;
         double pos_z=0;
@@ -24,27 +22,24 @@ int importBodyLocations(char* fileName, vector<bodyLocation>* bodyLocations)
         double rot_1=0;
         double rot_2=0;
         double rot_3=0;
+		double vx = 0;
+		double vy = 0;
+		double vz = 0;
+		int type = 0;
         std::string temp_data;
         ifstream ifile(fileName);
 
-        getline(ifile,temp_data);
-        for(int i=0; i<temp_data.size(); ++i){
-                if(temp_data[i]==','){temp_data[i]=' ';}
-        }
-
-        std::stringstream ss1(temp_data);
-        ss1>>numBodies>>numRocks;
-
         bodyLocation bodyLoc;
-        for (int i = 0; i < numBodies; i++)
+        //for (int i = 0; i < numBodies; i++)
+	while(getline(ifile,temp_data))
         {
-                getline(ifile,temp_data);
+                //getline(ifile,temp_data);
                 for(int i=0; i<temp_data.size(); ++i){
                         if(temp_data[i]==','){temp_data[i]=' ';}
                 }
 
                 std::stringstream ss(temp_data);
-                ss>>pos_x>>pos_y>>pos_z>>rot_0>>rot_1>>rot_2>>rot_3;
+                ss>>pos_x>>pos_y>>pos_z>>rot_0>>rot_1>>rot_2>>rot_3>>vx>>vy>>vz>>type;
 
                 bodyLoc.x = pos_x;
                 bodyLoc.y = pos_y;
@@ -54,10 +49,10 @@ int importBodyLocations(char* fileName, vector<bodyLocation>* bodyLocations)
                 bodyLoc.e2 = rot_2;
                 bodyLoc.e3 = rot_3;
 
-                bodyLocations->push_back(bodyLoc);
+                if(type==0) bodyLocations->push_back(bodyLoc);
         }
 
-        return numBodies-numRocks;
+        return 0;
 }
 
 double getRandomNumber(double min, double max)
@@ -315,7 +310,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         char filename[100];
         for(int i=0;i<nLength;i++)//for(int i=0;i<1;i++)//
         {
-        		for(int j=0;j<100;j++)//for(int j=0;j<nHeight;j++)//
+        	for(int j=0;j<200;j++)//for(int j=0;j<nHeight;j++)//	
                 {
                         for(int k=0;k<nWidth;k++)//for(int k=0;k<1;k++)//
                         {                        
@@ -360,7 +355,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         return numRocks;
 }
 
-ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize)
+ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize, double scale)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
@@ -376,10 +371,10 @@ ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector
 
         // Define the collision shape
 	InitObject(shearPlate, mass, position, rotation, material, true, false, -1, -1);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*1.2*.5,H*1.2*.5,TH*.5), ChVector<>(0,0,.5*W+.5*TH), rotation);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*1.2*.5,H*1.2*.5,TH*.5), ChVector<>(0,0,-.5*W-.5*TH), rotation);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*1.2*.5,(W+2*TH)*1.2*.5), ChVector<>(.5*L+.5*TH,0,0), rotation);
-	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*1.2*.5,(W+2*TH)*1.2*.5), ChVector<>(-.5*L-.5*TH,0,0), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*scale*.5,H*scale*.5,TH*.5), ChVector<>(0,0,.5*W+.5*TH), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>((L+2*TH)*scale*.5,H*scale*.5,TH*.5), ChVector<>(0,0,-.5*W-.5*TH), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*scale*.5,(W+2*TH)*scale*.5), ChVector<>(.5*L+.5*TH,0,0), rotation);
+	AddCollisionGeometry(shearPlate, BOX, ChVector<>(TH*.5,H*scale*.5,(W+2*TH)*scale*.5), ChVector<>(-.5*L-.5*TH,0,0), rotation);
 	FinalizeObject(shearPlate, (ChSystemParallel *) mphysicalSystem);
 
         return shearPlate;
@@ -416,7 +411,7 @@ ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<
         ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
         mmaterial->SetFriction(mu); // Friction coefficient of steel
 
-        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*1.2, TH, (W+2*TH)*1.2), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
+        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*1.2, 2*TH, (W+2*TH)*1.2), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
         ground->SetMaterialSurface(mmaterial);
         ground->SetBodyFixed(true);
         //ground->GetCollisionModel()->SetFamily(4);
@@ -424,7 +419,7 @@ ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<
         bodyTypes.push_back("ground");
 
         // Create bottom
-        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*5,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false);
+        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*5,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1.2);
         bottom->SetMaterialSurface(mmaterial);
         bottom->SetBodyFixed(true);
         //bottom->GetCollisionModel()->SetFamily(4);
@@ -489,7 +484,7 @@ public:
                 mmaterial->SetFriction(mu); // Friction coefficient of steel
 
                 // Create ground
-                ground = createBox(mphysicalSystem, ChVector<>(L+2*TH,TH,W+2*TH), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
+                ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,2*TH,(W+2*TH)*3), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
                 ground->SetMaterialSurface(mmaterial);
                 ground->SetBodyFixed(true);
                 //ground->GetCollisionModel()->SetFamily(4);
@@ -497,7 +492,7 @@ public:
                 bodyTypes.push_back("ground");
 
                 // Create bottom
-                bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H,W), TH, ChVector<>(0, 0, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false);
+                bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H,W), TH, ChVector<>(0, 0, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1);
                 bottom->SetMaterialSurface(mmaterial);
                 //bottom->GetCollisionModel()->SetFamily(4);
                 //bottom->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
@@ -505,12 +500,13 @@ public:
                 bodyTypes.push_back("bottom");
 
                 // Create top
-                top = createShearPlate(mphysicalSystem, ChVector<>(L,H,W), TH, ChVector<>(0, H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.3,0.3,0.6), false);
+                top = createShearPlate(mphysicalSystem, ChVector<>(L,H,W), TH, ChVector<>(0, H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.3,0.3,0.6), false,1);
                 top->SetMaterialSurface(mmaterial);
                 //top->GetCollisionModel()->SetFamily(4);
                	//top->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
+		//top->SetBodyFixed(true);
                 bodyTypes.push_back("top");
-
+/*
                 // Create ground
                 cieling = createBox(mphysicalSystem, ChVector<>(L, 2*H, W), ChVector<>(0,6.36,0), ChQuaternion<>(1,0,0,0), ChColor(0.3,0.5,0.3), false);
                 cieling->SetMaterialSurface(mmaterial);
@@ -528,6 +524,7 @@ public:
                 translationalVert->Initialize(cieling, top,
                         ChCoordsys<>(groundCM, chrono::Q_from_AngAxis(CH_C_PI/2,VECT_X)) );
                 mphysicalSystem->AddLink(translationalVert);
+*/
 
                 // create the translational joint between the top shear box and weight load
                 ChVector<> topCM = top->GetPos();
@@ -539,6 +536,7 @@ public:
                 // apply motion
                 ChFunction_Ramp* motionFunc3 = new ChFunction_Ramp(0,desiredVelocity);
                 translational->SetMotion_Z(motionFunc3);
+
         }
 };
 
@@ -550,15 +548,15 @@ void RunTimeStep(T* mSys, const int frame) {
 int main(int argc, char* argv[]) 
 {
 	string data_folder = "./data/";
-	bool visualize = false;
+	bool visualize = true;
 	int threads = 8;
 	int config = 0;
-	//real gravity = -9.81;			//acceleration due to gravity
-	real timestep = .0001;			//step size
-	//real time_to_run = 1;			//length of simulation
+	//real gravity = -9.81;			// acceleration due to gravity
+	real timestep = .0001;		// step size
+	//real time_to_run = 1;			// length of simulation
 	real current_time = 0;
 
-	int max_iteration = 15;
+	int max_iteration = 60;
 	double tolerance = 1e-3;
 
 	//=========================================================================================================
@@ -575,12 +573,12 @@ int main(int argc, char* argv[])
 	double scalingFactor = 1000; // scaling for distance
 	double scalingMASS = 10000000; // scaling for mass
 	double L = .06*scalingFactor;
-	double H = .03*scalingFactor;
+	double H = .015*scalingFactor;
 	double W = .06*scalingFactor;
 	double TH = .0032*scalingFactor;
 	//bool visualize = false;
 	double desiredVelocity = .66e-3*scalingFactor;
-	double particleRadius = .0004*scalingFactor;//.0004*scalingFactor;
+	double particleRadius = .0004*scalingFactor;//.006*scalingFactor;//
 	bool importParticles = true;
 	double lengthToRun = .006*scalingFactor;
 	double time_to_run = 5;//lengthToRun/desiredVelocity;
@@ -591,26 +589,25 @@ int main(int argc, char* argv[])
 	double muWalls = .2;
 	double muParticles = .86;
 	double gravity = -9.81*scalingFactor;
-	if(!settleBodies) gravity = 0;
 
 	// apply normal force to cieling
 	// 16,888.1 Pa
 	// 44,127.0 Pa
 	// 71,365.9 Pa
 	double normalPressure = 16888.1*scalingMASS/scalingFactor;
-	if(!settleBodies) gravity = 0;
+	//if(!settleBodies) gravity = 0;
 	mphysicalSystem->Set_G_acc(ChVector<>(0,gravity,0));
 
 	int numRocksCreated = 0;
 	if(!settleBodies)
 	{
-		createParticlesFromFile(mphysicalSystem, "C:/Users/Daniel/Dropbox/DEM_quickrete/posStart.dat", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
+		//createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
 		shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	}
 	else
 	{
 		ChVector<> size = chrono::ChVector<>(L,H,W);
-		cielingSettled = createShakerBox(mphysicalSystem, size, TH, particleRadius, 0);
+		cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, 0);
 		numRocksCreated = createParticles(mphysicalSystem, particleRadius, scalingFactor, particleDensity, size, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
 	}
 
@@ -633,7 +630,7 @@ int main(int argc, char* argv[])
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->SetCollisionEnvelope(particleRadius * .05);
-	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBinsPerAxis(R3(25, 25, 25));
+	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBinsPerAxis(I3(25, 25, 25));
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBodyPerBin(100, 50);
 
 	omp_set_num_threads(threads);
@@ -654,13 +651,18 @@ int main(int argc, char* argv[])
 	//=========================================================================================================
 	// If you choose not to visualize, output data for post-processing
 	//=========================================================================================================
+
+    // initialize the shear stress vs. displacement output file
+
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
 	string timing_file_name = ss_m.str();
 	ofstream ofile(timing_file_name.c_str());
-	ofile.close();
 	int file = 0;
 	for (int i = 0; i < num_steps; i++) {
+		//ofile.open();
+		ofile << current_time << ", " << shearBox->top->GetPos().x << ", " << shearBox->translational->Get_react_force().x << ", " << endl;
+
 		cout << "step " << i;
 		cout << " Residual: " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual();
 		cout << " ITER: " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetTotalIterations();
@@ -681,6 +683,7 @@ int main(int argc, char* argv[])
 		}
 		current_time += timestep;
 	}
+	ofile.close();
 	stringstream ss;
 	return 0;
 }
