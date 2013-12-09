@@ -182,11 +182,11 @@ int generateRockObject(int rockIndex, double rockRadius)
         return 0;
 }
 
-ChSharedPtr<ChBody> createSphere(ChSystemParallel* mphysicalSystem, double radius, ChVector<> position, ChColor color, bool visualize, double mass, int collisionFamily)
+ChSharedPtr<ChBody> createSphere(ChSystemParallel* mphysicalSystem, double radius, ChVector<> position, ChColor color, bool visualize, double mass, int collisionFamily, double friction)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(0.4);
+	material->SetFriction(friction);
 
         // create the body
         ChSharedPtr<ChBody> sphere = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
@@ -216,15 +216,15 @@ ChSharedPtr<ChBody> createSphere(ChSystemParallel* mphysicalSystem, double radiu
         return sphere;
 }
 
-void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, double particleRadius, double scalingFactor, double particleDensity, bool useSpheres, double mu, double visualize, ChColor color)
+void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, double particleRadius, double scalingFactor, double particleDensity, bool useSpheres, double friction, double visualize, ChColor color, double L, double H, double W)
 {
         vector<bodyLocation> bodyLocs;
         int numOtherBodies = importBodyLocations(fileName, &bodyLocs);
 
         ChSharedPtr<ChBody> particle;
         
-        ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
-        mmaterial->SetFriction(mu);
+        //ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
+        //mmaterial->SetFriction(mu);
 
         // determine mass
         double volume = 4.0*CH_C_PI*particleRadius*particleRadius*particleRadius/3.0;
@@ -237,42 +237,47 @@ void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, 
         {
                 bodyLocation BL = bodyLocs[i];
 
-                if(!useSpheres)
+                //if(BL.z<(.5*H-particleRadius)&&BL.z>(-.5*H+particleRadius))
                 {
-                        //// USE ROCKS
-                        //sprintf(filename, "../data/directShear/rocks/rock%d.obj", numRocks);
-                        //particle = (ChBodySceneNode*)addChBodySceneNode_easyGenericMesh(
-                        //        &mphysicalSystem, msceneManager,
-                        //        mass,
-                        //        ChVector<>(BL.x,BL.y,BL.z),
-                        //        ChQuaternion<>(BL.e0,BL.e1,BL.e2,BL.e3),
-                        //        filename,
-                        //        false,        // not static
-                        //        false);        // true=convex; false=concave(do convex decomposition of concave mesh)
-                }
-                else
-                {
-                        // USE SPHERES
-                        particle = createSphere(mphysicalSystem, getRandomNumber(particleRadius,particleRadius), ChVector<>(BL.x,BL.y,BL.z), color, mass, visualize, numRocks);
 
-                        //particleEasy = (ChBodySceneNode*)addChBodySceneNode_easySphere(
-                        //        &mphysicalSystem, msceneManager,
-                        //        mass, // mass
-                        //        ChVector<>(BL.x,BL.y,BL.z),
-                        //        getRandomNumber(particleRadius,particleRadius), // radius
-                        //        20, // hslices, for rendering
-                        //        15); // vslices, for rendering
-                }
+					if(!useSpheres)
+					{
+							//// USE ROCKS
+							//sprintf(filename, "../data/directShear/rocks/rock%d.obj", numRocks);
+							//particle = (ChBodySceneNode*)addChBodySceneNode_easyGenericMesh(
+							//        &mphysicalSystem, msceneManager,
+							//        mass,
+							//        ChVector<>(BL.x,BL.y,BL.z),
+							//        ChQuaternion<>(BL.e0,BL.e1,BL.e2,BL.e3),
+							//        filename,
+							//        false,        // not static
+							//        false);        // true=convex; false=concave(do convex decomposition of concave mesh)
+					}
+					else
+					{
+							// USE SPHERES
+							particle = createSphere(mphysicalSystem, particleRadius, ChVector<>(BL.x,BL.y,BL.z), color, mass, visualize, numRocks, friction);
+
+							//particleEasy = (ChBodySceneNode*)addChBodySceneNode_easySphere(
+							//        &mphysicalSystem, msceneManager,
+							//        mass, // mass
+							//        ChVector<>(BL.x,BL.y,BL.z),
+							//        getRandomNumber(particleRadius,particleRadius), // radius
+							//        20, // hslices, for rendering
+							//        15); // vslices, for rendering
+					}
+
 
                 particle->SetInertiaXX(ChVector<>(Ix, Ix, Ix));
                 particle->SetCollide(true);
                 bodyTypes.push_back("particle");
-                particle->SetMaterialSurface(mmaterial);
+                //particle->SetMaterialSurface(mmaterial);
                 numRocks++;
+                }
         }
 }
 
-int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, double scalingFactor, double particleDensity, ChVector<> size, bool useSpheres, double mu, bool visualize, ChColor color)
+int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, double scalingFactor, double particleDensity, ChVector<> size, bool useSpheres, double friction, bool visualize, ChColor color)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
@@ -285,8 +290,8 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         ChSharedPtr<ChBody> particle;
         //ChBodySceneNode* particleEasy;
 
-        ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
-        mmaterial->SetFriction(mu);
+//        ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
+//        mmaterial->SetFriction(mu);
 
         // determine mass
         double volume = 4.0*CH_C_PI*particleRadius*particleRadius*particleRadius/3.0;
@@ -334,7 +339,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
                                         particle = createSphere(mphysicalSystem, particleRadius,
                                                 ChVector<>(2.4*particleRadius*i, 2.4*particleRadius*j, 2.4*particleRadius*k)+ChVector<>(-L/2+particleRadius, 2.4*particleRadius, -W/2+particleRadius),//+ChVector<>(getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius), getRandomNumber(-.2*particleRadius,.2*particleRadius)),
                                                 //ChVector<>(0,1,0),//
-                                                color, mass, visualize, numRocks);
+                                                color, mass, visualize, numRocks, friction);
                                         //particle->GetCollisionModel()->SetFamily(5);
                                         //particle->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(5);
 
@@ -345,7 +350,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
                                 //particle->SetInertiaXX(particleEasy->GetBody()->GetInertiaXX());
                                 //particle->SetCollide(true);
                                 bodyTypes.push_back("particle");
-                                particle->SetMaterialSurface(mmaterial);
+                                //particle->SetMaterialSurface(mmaterial);
                                 numRocks++;
 				if(numRocks%10000==0) printf("Num rocks: %d\n",numRocks);
                         }
@@ -355,11 +360,11 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         return numRocks;
 }
 
-ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize, double scale)
+ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize, double scale, double friction)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(0.4);
+	material->SetFriction(friction);
 
         double L = size.x;
         double H = size.y;
@@ -380,11 +385,11 @@ ChSharedPtr<ChBody> createShearPlate(ChSystemParallel* mphysicalSystem, ChVector
         return shearPlate;
 }
 
-ChSharedPtr<ChBody> createBox(ChSystemParallel* mphysicalSystem, ChVector<> size, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize)
+ChSharedPtr<ChBody> createBox(ChSystemParallel* mphysicalSystem, ChVector<> size, ChVector<> position, ChQuaternion<> rotation, ChColor color, bool visualize, double friction)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(0.4);
+	material->SetFriction(friction);
 
         double L = size.x;
         double H = size.y;
@@ -402,25 +407,25 @@ ChSharedPtr<ChBody> createBox(ChSystemParallel* mphysicalSystem, ChVector<> size
         return box;
 }
 
-ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, double particleRadius, double mu)
+ChSharedPtr<ChBody> createShakerBox(ChSystemParallel* mphysicalSystem, ChVector<> size, double TH, double particleRadius, double friction)
 {
         double L = size.x;
         double H = size.y;
         double W = size.z;
 
-        ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
-        mmaterial->SetFriction(mu); // Friction coefficient of steel
+//        ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
+//        mmaterial->SetFriction(friction); // Friction coefficient of steel
 
-        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*1.2, 2*TH, (W+2*TH)*1.2), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
-        ground->SetMaterialSurface(mmaterial);
+        ChSharedPtr<ChBody> ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*1.2, 2*TH, (W+2*TH)*1.2), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false, friction);
+       // ground->SetMaterialSurface(mmaterial);
         ground->SetBodyFixed(true);
         //ground->GetCollisionModel()->SetFamily(4);
         //ground->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
         bodyTypes.push_back("ground");
 
         // Create bottom
-        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*5,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1.2);
-        bottom->SetMaterialSurface(mmaterial);
+        ChSharedPtr<ChBody> bottom = createShearPlate(mphysicalSystem, ChVector<>(L,H*5,W), TH, ChVector<>(0, H*2-.5*H, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1.2, friction);
+        //bottom->SetMaterialSurface(mmaterial);
         bottom->SetBodyFixed(true);
         //bottom->GetCollisionModel()->SetFamily(4);
         //bottom->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
@@ -472,7 +477,7 @@ public:
         // the various parts and adding them to the physical system - also creating
         // and adding constraints to the system.
         ShearBox(ChSystemParallel* mphysicalSystem,        ///< the chrono::engine physical system
-                bool visualize, double L, double H, double W, double TH, double desiredVelocity, double normalPressure, double mu)
+                bool visualize, double L, double H, double W, double TH, double desiredVelocity, double normalPressure, double friction)
         {
                 this->visualize = visualize;
                 this->L = L;
@@ -482,28 +487,28 @@ public:
                 this->desiredVelocity = desiredVelocity;
                 this->normalPressure = normalPressure;
 
-                ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
-                mmaterial->SetFriction(mu); // Friction coefficient of steel
+//                ChSharedPtr<ChMaterialSurface> mmaterial(new ChMaterialSurface);
+//                mmaterial->SetFriction(mu); // Friction coefficient of steel
 
                 // Create ground
-                ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,2*TH,(W+2*TH)*3), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
-                ground->SetMaterialSurface(mmaterial);
+                ground = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,2*TH,(W+2*TH)*3), ChVector<>(0,-.5*H+-.5*TH,0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false, friction);
+                //ground->SetMaterialSurface(mmaterial);
                 ground->SetBodyFixed(true);
                 //ground->GetCollisionModel()->SetFamily(4);
                 //ground->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
                 bodyTypes.push_back("ground");
 
                 // Create side wall
-                sideWall1 = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,H*3,TH), ChVector<>(0,0,.5*W+.5*TH), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
-                sideWall1->SetMaterialSurface(mmaterial);
+                sideWall1 = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,H*3,TH), ChVector<>(0,0,.5*W+.5*TH), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false, friction);
+                //sideWall1->SetMaterialSurface(mmaterial);
                 sideWall1->SetBodyFixed(true);
                 //ground->GetCollisionModel()->SetFamily(4);
                 //ground->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
                 bodyTypes.push_back("sideWall1");
 
                 // Create side wall
-                sideWall2 = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,H*3,TH), ChVector<>(0,0,-.5*W-.5*TH), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false);
-                sideWall2->SetMaterialSurface(mmaterial);
+                sideWall2 = createBox(mphysicalSystem, ChVector<>((L+2*TH)*3,H*3,TH), ChVector<>(0,0,-.5*W-.5*TH), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.6,0.6), false, friction);
+                //sideWall2->SetMaterialSurface(mmaterial);
                 sideWall2->SetBodyFixed(true);
                 //ground->GetCollisionModel()->SetFamily(4);
                 //ground->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
@@ -511,16 +516,16 @@ public:
 
                 // Create bottom
                 double shearPlateScale = .7;
-                bottom = createShearPlate(mphysicalSystem, ChVector<>(L,shearPlateScale*H,W), 5*TH, ChVector<>(0, -.5*H+-.5*TH+shearPlateScale*.5*H+TH, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1);
-                bottom->SetMaterialSurface(mmaterial);
+                bottom = createShearPlate(mphysicalSystem, ChVector<>(L,shearPlateScale*H,W), 5*TH, ChVector<>(0, -.5*H+-.5*TH+shearPlateScale*.5*H+TH, 0), ChQuaternion<>(1,0,0,0), ChColor(0.6,0.3,0.6), false,1,friction);
+                //bottom->SetMaterialSurface(mmaterial);
                 //bottom->GetCollisionModel()->SetFamily(4);
                 //bottom->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
                 bottom->SetBodyFixed(true);
                 bodyTypes.push_back("bottom");
 
                 // Create top
-                top = createShearPlate(mphysicalSystem, ChVector<>(L,shearPlateScale*H,W), 5*TH, ChVector<>(0, shearPlateScale*H+-.5*H+-.5*TH+shearPlateScale*.5*H+TH, 0), ChQuaternion<>(1,0,0,0), ChColor(0.3,0.3,0.6), false,1);
-                top->SetMaterialSurface(mmaterial);
+                top = createShearPlate(mphysicalSystem, ChVector<>(L,shearPlateScale*H,W), 5*TH, ChVector<>(0, shearPlateScale*H+-.5*H+-.5*TH+shearPlateScale*.5*H+TH, 0), ChQuaternion<>(1,0,0,0), ChColor(0.3,0.3,0.6), false,1,friction);
+                //top->SetMaterialSurface(mmaterial);
                 //top->GetCollisionModel()->SetFamily(4);
                	//top->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(4);
 		//top->SetBodyFixed(true);
@@ -566,16 +571,28 @@ void RunTimeStep(T* mSys, const int frame) {
 
 int main(int argc, char* argv[]) 
 {
-	string data_folder = "./data/";
+	// command line arguments
+	bool settleBodies = false;
+	if(argc==2) settleBodies = atoi(argv[1]);
+	double contactRecoverySpeed = 100;
+	if(argc==3) contactRecoverySpeed = atoi(argv[2]);
+	int max_iteration = 30;
+	if(argc==4) max_iteration = atoi(argv[3]);
+	real timestep = 0.0001;		// step size
+	if(argc==5) timestep = atof(argv[4]);
+
+	stringstream ss_dataFolder;
+	ss_dataFolder << "./data_test/data_" << contactRecoverySpeed << "_" << max_iteration << "_" << timestep;
+	string data_folder = ss_dataFolder.str();
+	cout << "DATA FOLDER: " << data_folder << endl;
+
 	bool visualize = false;
-	int threads = 12;
+	int threads = 16;
 	int config = 0;
 	//real gravity = -9.81;			// acceleration due to gravity
-	real timestep = .0001;		// step size
 	//real time_to_run = 1;			// length of simulation
 	real current_time = 0;
 
-	int max_iteration = 30;
 	double tolerance = 1e-3;
 
 	//=========================================================================================================
@@ -586,14 +603,13 @@ int main(int argc, char* argv[])
 	//=========================================================================================================
 	// Populate the system with bodies/constraints/forces/etc.
 	//=========================================================================================================
-	bool settleBodies = false;
-	if(argc==2) settleBodies = atoi(argv[1]);
+
 	bool useSpheres = true;
 	double scalingFactor = 1000; // scaling for distance
 	double scalingMASS = 10000000; // scaling for mass
 	double L = .06*scalingFactor;
 	double H = .03*scalingFactor;
-	double W = .06*scalingFactor;
+	double W = .06*scalingFactor;//.06*scalingFactor;
 	double TH = .0032*scalingFactor; // If this is changed I think the particle input might not be in the right place...
 	//bool visualize = false;
 	double desiredVelocity = .66e-3*scalingFactor;
@@ -620,13 +636,13 @@ int main(int argc, char* argv[])
 	int numRocksCreated = 0;
 	if(!settleBodies)
 	{
-		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
+		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), L, H, W);
 		shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	}
 	else
 	{
 		ChVector<> size = chrono::ChVector<>(L,H,W);
-		cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, 0);
+		cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, muWalls);
 		numRocksCreated = createParticles(mphysicalSystem, particleRadius, scalingFactor, particleDensity, size, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
 	}
 
@@ -683,7 +699,7 @@ int main(int argc, char* argv[])
 	int file = 0;
 	for (int i = 0; i < num_steps; i++) {
 		//ofile.open();
-		ofile << current_time << ", " << shearBox->top->GetPos().x << ", " << shearBox->top->GetPos().y << ", " << shearBox->top->GetPos().z << ", " << shearBox->translational->Get_react_force().x << ", " << shearBox->translational->Get_react_force().y << ", " << shearBox->translational->Get_react_force().z << ", " << endl;
+		ofile << current_time << ", " << shearBox->top->GetPos().x << ", " << shearBox->top->GetPos().y << ", " << shearBox->top->GetPos().z << ", " << shearBox->translational->Get_react_force().x << ", " << shearBox->translational->Get_react_force().y << ", " << shearBox->translational->Get_react_force().z << ", " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual() << ", " << endl;
 
 		cout << "step " << i;
 		cout << " Residual: " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual();
