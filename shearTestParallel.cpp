@@ -216,7 +216,7 @@ ChSharedPtr<ChBody> createSphere(ChSystemParallel* mphysicalSystem, double radiu
         return sphere;
 }
 
-void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, double particleRadius, double scalingFactor, double particleDensity, bool useSpheres, double friction, double visualize, ChColor color, double L, double H, double W)
+void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, double particleRadius, double scalingFactor, double particleDensity, bool useSpheres, double friction, double visualize, ChColor color, double L, double H, double W, bool allOnes)
 {
         vector<bodyLocation> bodyLocs;
         int numOtherBodies = importBodyLocations(fileName, &bodyLocs);
@@ -230,6 +230,11 @@ void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, 
         double volume = 4.0*CH_C_PI*particleRadius*particleRadius*particleRadius/3.0;
         double mass = particleDensity*volume;
         double Ix = .4*mass*particleRadius*particleRadius;
+        if(allOnes)
+        {
+        	mass = 1.0;
+        	Ix = 1.0;
+        }
 
         int numRocks = 0;
         char filename[100];
@@ -277,7 +282,7 @@ void createParticlesFromFile(ChSystemParallel* mphysicalSystem, char* fileName, 
         }
 }
 
-int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, double scalingFactor, double particleDensity, ChVector<> size, bool useSpheres, double friction, bool visualize, ChColor color)
+int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, double scalingFactor, double particleDensity, ChVector<> size, bool useSpheres, double friction, bool visualize, ChColor color, bool allOnes)
 {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
@@ -298,6 +303,11 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         double mass = particleDensity*volume;
         printf("Particle mass: %f\n",mass);
         double Ix = .4*mass*particleRadius*particleRadius;
+        if(allOnes)
+        {
+        	mass = 1.0;
+        	Ix = 1.0;
+        }
 
         // make sure the particles are inside
         L = 0.6*L;
@@ -573,17 +583,20 @@ int main(int argc, char* argv[])
 {
 	// command line arguments
 	bool settleBodies = false;
-	if(argc==2) settleBodies = atoi(argv[1]);
+	settleBodies = atoi(argv[1]); //if(argc==2) settleBodies = atoi(argv[1]);
 	double contactRecoverySpeed = 100;
-	if(argc==3) contactRecoverySpeed = atoi(argv[2]);
+	contactRecoverySpeed = atoi(argv[2]); //if(argc==3) contactRecoverySpeed = atoi(argv[2]);
 	int max_iteration = 30;
-	if(argc==4) max_iteration = atoi(argv[3]);
+	max_iteration = atoi(argv[3]); //if(argc==4) max_iteration = atoi(argv[3]);
 	real timestep = 0.0001;		// step size
-	if(argc==5) timestep = atof(argv[4]);
+	timestep = atof(argv[4]); //if(argc==5) timestep = atof(argv[4]);
+	string data_folder = "./DataAllOnes/";
+	data_folder = argv[5]; //if(argc==6) data_folder = argv[5];
+	bool allOnes = atoi(argv[6]);
 
-	stringstream ss_dataFolder;
-	ss_dataFolder << "./data_test/data_" << contactRecoverySpeed << "_" << max_iteration << "_" << timestep;
-	string data_folder = ss_dataFolder.str();
+	//stringstream ss_dataFolder;
+	//ss_dataFolder << "./data_test/data_" << contactRecoverySpeed << "_" << max_iteration << "_" << timestep;
+	//string data_folder = ss_dataFolder.str();
 	cout << "DATA FOLDER: " << data_folder << endl;
 
 	bool visualize = false;
@@ -634,16 +647,18 @@ int main(int argc, char* argv[])
 	mphysicalSystem->Set_G_acc(ChVector<>(0,gravity,0));
 
 	int numRocksCreated = 0;
+	shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	if(!settleBodies)
 	{
-		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), L, H, W);
-		shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
+		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), L, H, W, allOnes);
+		//shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	}
 	else
 	{
 		ChVector<> size = chrono::ChVector<>(L,H,W);
-		cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, muWalls);
-		numRocksCreated = createParticles(mphysicalSystem, particleRadius, scalingFactor, particleDensity, size, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6));
+		//cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, muWalls);
+		shearBox->top->SetBodyFixed(true);
+		numRocksCreated = createParticles(mphysicalSystem, particleRadius, scalingFactor, particleDensity, size, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), allOnes);
 	}
 
 	//=========================================================================================================
