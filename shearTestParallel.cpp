@@ -600,7 +600,7 @@ int main(int argc, char* argv[])
 	cout << "DATA FOLDER: " << data_folder << endl;
 
 	bool visualize = false;
-	int threads = 16;
+	int threads = 8;
 	int config = 0;
 	//real gravity = -9.81;			// acceleration due to gravity
 	//real time_to_run = 1;			// length of simulation
@@ -626,6 +626,7 @@ int main(int argc, char* argv[])
 	double TH = .0032*scalingFactor; // If this is changed I think the particle input might not be in the right place...
 	//bool visualize = false;
 	double desiredVelocity = .66e-3*scalingFactor;
+	if(settleBodies) desiredVelocity = 0;
 	double particleRadius = .0004*scalingFactor;//.006*scalingFactor;//
 	bool importParticles = true;
 	double lengthToRun = .006*scalingFactor;
@@ -647,7 +648,7 @@ int main(int argc, char* argv[])
 	mphysicalSystem->Set_G_acc(ChVector<>(0,gravity,0));
 
 	int numRocksCreated = 0;
-	shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
+	//shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	if(!settleBodies)
 	{
 		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), L, H, W, allOnes);
@@ -656,8 +657,8 @@ int main(int argc, char* argv[])
 	else
 	{
 		ChVector<> size = chrono::ChVector<>(L,H,W);
-		//cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, muWalls);
-		shearBox->top->SetBodyFixed(true);
+		cielingSettled  = createShakerBox(mphysicalSystem, size, TH, particleRadius, muWalls);
+		//shearBox->top->SetBodyFixed(true);
 		numRocksCreated = createParticles(mphysicalSystem, particleRadius, scalingFactor, particleDensity, size, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), allOnes);
 	}
 
@@ -673,18 +674,24 @@ int main(int argc, char* argv[])
 	mphysicalSystem->SetTolSpeeds(tolerance);
 	//system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	mphysicalSystem->SetStep(timestep);
+	mphysicalSystem->SetMaxPenetrationRecoverySpeed(contactRecoverySpeed);
 
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
+	//((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);//max_iteration);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationBilateral(0);//max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(contactRecoverySpeed);
+	//((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxPenetrationRecoverySpeed(100);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetSolverType(APGDRS);
 
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->SetCollisionEnvelope(particleRadius * .05);
-	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBinsPerAxis(I3(25, 25, 25));
+	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBinsPerAxis(I3(25, 50, 25));
 	((ChCollisionSystemParallel*) (mphysicalSystem->GetCollisionSystem()))->setBodyPerBin(100, 50);
 
-	((ChSystemParallel*) mphysicalSystem)->SetAABB(R3(-L, -H, -W), R3(L, H, W));
+	if(!settleBodies) ((ChSystemParallel*) mphysicalSystem)->SetAABB(R3(-L, -H, -W), R3(L, H, W));
 
 	omp_set_num_threads(threads);
 
