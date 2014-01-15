@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "common/input_output.h"
 
-vector<char*> bodyTypes;
+std::vector<string> bodyTypes;
 
 struct bodyLocation {
         double x;
@@ -49,7 +49,13 @@ int importBodyLocations(char* fileName, vector<bodyLocation>* bodyLocations)
                 bodyLoc.e2 = rot_2;
                 bodyLoc.e3 = rot_3;
 
-                if(type==0) bodyLocations->push_back(bodyLoc);
+                if(type==0)
+                {
+                	bodyLocations->push_back(bodyLoc);
+                	//cout << pos_x << " " << pos_y << " " << pos_z << endl;
+                	//cin.get();
+                }
+
         }
 
         return 0;
@@ -325,7 +331,7 @@ int createParticles(ChSystemParallel* mphysicalSystem, double particleRadius, do
         char filename[100];
         for(int i=0;i<nLength;i++)//for(int i=0;i<1;i++)//
         {
-        	for(int j=0;j<200;j++)//for(int j=0;j<nHeight;j++)//	
+        	for(int j=0;j<100;j++)//for(int j=0;j<nHeight;j++)//
                 {
                         for(int k=0;k<nWidth;k++)//for(int k=0;k<1;k++)//
                         {                        
@@ -564,12 +570,12 @@ public:
                 ChVector<> topCM = top->GetPos();
                 translational = new ChLinkLockLock();
                 translational->Initialize(ground, top,
-                        ChCoordsys<>(topCM, chrono::Q_from_AngAxis(-CH_C_PI/2,VECT_Y)) );
+                        ChCoordsys<>(topCM, QUNIT));//chrono::Q_from_AngAxis(-CH_C_PI/2,VECT_Y)) );
                 mphysicalSystem->AddLink(translational);
 
                 // apply motion
                 ChFunction_Ramp* motionFunc3 = new ChFunction_Ramp(0,desiredVelocity);
-                translational->SetMotion_Z(motionFunc3);
+                translational->SetMotion_X(motionFunc3);
 
         }
 };
@@ -600,7 +606,7 @@ int main(int argc, char* argv[])
 	cout << "DATA FOLDER: " << data_folder << endl;
 
 	bool visualize = false;
-	int threads = 8;
+	int threads = 16;
 	int config = 0;
 	//real gravity = -9.81;			// acceleration due to gravity
 	//real time_to_run = 1;			// length of simulation
@@ -652,7 +658,7 @@ int main(int argc, char* argv[])
 	if(!settleBodies)
 	{
 		createParticlesFromFile(mphysicalSystem, "posStart.txt", particleRadius, scalingFactor, particleDensity, useSpheres, muParticles, visualize, ChColor(0.6,0.6,0.6), L, H, W, allOnes);
-		//shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
+		shearBox = new ShearBox(mphysicalSystem, visualize, L, H, W, TH, desiredVelocity, normalPressure, muWalls);
 	}
 	else
 	{
@@ -680,7 +686,7 @@ int main(int argc, char* argv[])
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);//max_iteration);
-	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationBilateral(0);//max_iteration);
+	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetMaxIterationBilateral(max_iteration);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
 	((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->SetContactRecoverySpeed(contactRecoverySpeed);
@@ -721,8 +727,24 @@ int main(int argc, char* argv[])
 	int file = 0;
 	for (int i = 0; i < num_steps; i++) {
 		//ofile.open();
-		ofile << current_time << ", " << shearBox->top->GetPos().x << ", " << shearBox->top->GetPos().y << ", " << shearBox->top->GetPos().z << ", " << shearBox->translational->Get_react_force().x << ", " << shearBox->translational->Get_react_force().y << ", " << shearBox->translational->Get_react_force().z << ", " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual() << ", " << endl;
-
+		if(!settleBodies)
+		{
+			ofile << current_time << ", " << shearBox->top->GetPos().x << ", " << shearBox->top->GetPos().y << ", " << shearBox->top->GetPos().z << ", " << shearBox->translational->Get_react_force().x << ", " << shearBox->translational->Get_react_force().y << ", " << shearBox->translational->Get_react_force().z << ", " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual() << ", " << endl;
+		}
+		else
+		{
+			ofile << i << ", ";
+			ofile << current_time << ", ";
+			ofile << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual() << ", ";
+			ofile << mphysicalSystem->GetTimerStep() << ", ";
+			ofile << mphysicalSystem->GetNbodies() << ", ";
+			ofile << mphysicalSystem->GetNcontacts() << ", ";
+			ofile << mphysicalSystem->GetTimerStep() << ", ";
+			ofile << mphysicalSystem->GetTimerLcp() << ", ";
+			ofile << mphysicalSystem->GetTimerCollisionBroad() << ", ";
+			ofile << mphysicalSystem->GetTimerCollisionNarrow() << ", ";
+			ofile << ((ChLcpSolverParallel*) (mphysicalSystem->GetLcpSolverSpeed()))->GetTotalIterations() << ", \n";
+		}
 		cout << "step " << i;
 		cout << " Residual: " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetResidual();
 		cout << " ITER: " << ((ChLcpSolverParallel *) (mphysicalSystem->GetLcpSolverSpeed()))->GetTotalIterations();
